@@ -1,0 +1,10 @@
+{
+  "account": {
+    "username": "Username",
+    "password": "Password"
+  },
+  "dirs": {
+    "downloadDir": "downloads/",
+    "extractDir": "extracted/"
+  }
+}
