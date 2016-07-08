@@ -1,0 +1,11 @@
+/node_modules/
+/downloads/
+/extracted/
+/browserify-cache.json
+/.idea/
+/config.json
+/main
+/move.sh
+/dist/
+*.zip
+/vendor/
