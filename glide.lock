@@ -1,0 +1,12 @@
+hash: 67e17a6384709ab815b732bd3bd86897a73c01143568e2e4134888501179a5f0
+updated: 2016-07-05T20:45:31.29541205+02:00
+imports:
+- name: github.com/cavaliercoder/grab
+  version: 280fff2a414f649f62029dce448963f045380c0a
+- name: github.com/julienschmidt/httprouter
+  version: 77366a47451a56bb3ba682481eed85b64fea14e8
+- name: github.com/nu7hatch/gouuid
+  version: 179d4d0c4d8d407a32af483c2354df1d2c91e6c3
+- name: github.com/pivotal-golang/bytefmt
+  version: 324686575f9498a515062674b02cc0a4fd5de16b
+devImports: []

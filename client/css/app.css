@@ -1,0 +1,10 @@
+.row {
+    margin-bottom: 10px
+}
+html {
+    overflow-y: scroll;
+}
+
+.glyphicon-info-sign {
+    color: #555;
+}

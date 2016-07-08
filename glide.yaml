@@ -1,0 +1,6 @@
+package: uploaded-downloader
+import:
+- package: github.com/cavaliercoder/grab
+- package: github.com/julienschmidt/httprouter
+- package: github.com/nu7hatch/gouuid
+- package: github.com/pivotal-golang/bytefmt
