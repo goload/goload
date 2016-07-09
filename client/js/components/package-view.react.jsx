@@ -17,6 +17,8 @@ import _ from "lodash";
 import alertify from "alertify.js";
 alertify.logPosition("top right");
 
+const _url = '/api/packages';
+
 export class PackageView extends React.Component {
     constructor(props) {
         super(props);
@@ -52,7 +54,7 @@ export class PackageView extends React.Component {
     }
 
     loadPackages() {
-        $.get('/packages', result => {
+        $.get(_url, result => {
             this.setState({
                 packages: _.sortBy(result, (item)=>item.date_added).reverse()
             });
@@ -83,7 +85,7 @@ export class PackageView extends React.Component {
                 data.files.push({'url': link})
             }
         });
-        $.post('/packages', JSON.stringify(data)).done(()=> {
+        $.post(_url, JSON.stringify(data)).done(()=> {
 
             alertify.delay(2000).success('Package added');
             this.setState({
@@ -99,7 +101,7 @@ export class PackageView extends React.Component {
     }
 
     retryPackage(pack) {
-        $.get('/packages/' + pack.id + '/retry', ()=> {
+        $.get(_url+'/' + pack.id + '/retry', ()=> {
                 this.loadPackages();
                 alertify.delay(2000).success('Retrying package ' + pack.name);
             }
@@ -108,7 +110,7 @@ export class PackageView extends React.Component {
 
     removePackage(pack) {
         $.ajax({
-            url: '/packages/' + pack.id,
+            url: _url+'/' + pack.id,
             type: 'DELETE',
             success: ()=> {
                 this.loadPackages();

@@ -15,6 +15,7 @@ import (
 )
 
 
+var Version = "dev"
 
 func main() {
 	config, error := configuration.NewConfigurationFromFileName("config.json")
@@ -40,14 +41,20 @@ func main() {
 	ul := models.NewUploaded(config)
 	database := data.NewDatastore()
 	packageController := controllers.NewPackageController(database,ul)
-	router.DELETE("/packages/:id", packageController.RemovePackage)
-	router.POST("/packages", packageController.CreatePackage)
-	router.GET("/packages", packageController.ListPackages)
-	router.GET("/packages/:id/retry", packageController.RetryPackage)
+	router.DELETE("/api/packages/:id", packageController.RemovePackage)
+	router.POST("/api/packages", packageController.CreatePackage)
+	router.GET("/api/packages", packageController.ListPackages)
+	router.GET("/api/packages/:id/retry", packageController.RetryPackage)
 	configController := controllers.NewConfiguartionController(config)
-	router.PUT("/config/dirs", configController.UpdateDirs)
-	router.PUT("/config/account", configController.UpdateAccount)
-	router.GET("/config", configController.GetConfiguration)
+	router.PUT("/api/config/dirs", configController.UpdateDirs)
+	router.PUT("/api/config/account", configController.UpdateAccount)
+	router.GET("/api/config", configController.GetConfiguration)
+	router.GET("/api/version", func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(200)
+		versionJson := []byte(`{"version":"`+Version+`"}`)
+		w.Write(versionJson)
+	})
 	go LoopPackages(database, ul,config);
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
