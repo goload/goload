@@ -34,7 +34,7 @@ export class NavBar extends React.Component {
                                 glyph="home"/>{' '}Home</NavItem></LinkContainer>
                         </Nav>
                         <Nav pullRight>
-                            <NavItem target="_blank" href={'https://github.com/goload/goload/releases/tag/'+ this.state.version}>{this.state.version}</NavItem>
+                            <NavItem target="_blank" href={'https://github.com/goload/goload/releases/tag/v'+ this.state.version}>{this.state.version}</NavItem>
                         </Nav>
                         <Nav pullRight>
                             <LinkContainer to={'settings'}><NavItem > <Glyphicon glyph="wrench"/>{' '}Settings</NavItem></LinkContainer>
