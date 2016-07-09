@@ -9,3 +9,5 @@
 /dist/
 *.zip
 /vendor/
+/testlinks
+/unrartest
