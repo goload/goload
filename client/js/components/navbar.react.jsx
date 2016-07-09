@@ -2,9 +2,22 @@ import React from 'react'
 import {Glyphicon, Navbar, Nav, NavItem} from 'react-bootstrap';
 import {LinkContainer} from 'react-router-bootstrap';
 import {Link} from 'react-router'
-
+import $ from 'jquery'
 
 export class NavBar extends React.Component {
+    constructor(props){
+        super(props);
+        this.state={
+            version:''
+        }
+    }
+
+    componentDidMount() {
+        $.get('/api/version',(json)=>
+            this.setState({version:json.version})
+        )
+    }
+
     render() {
         return (
             <div>
@@ -19,6 +32,9 @@ export class NavBar extends React.Component {
                         <Nav>
                             <LinkContainer to={'/'}><NavItem > <Glyphicon
                                 glyph="home"/>{' '}Home</NavItem></LinkContainer>
+                        </Nav>
+                        <Nav pullRight>
+                            <NavItem target="_blank" href={'https://github.com/goload/goload/releases/tag/'+ this.state.version}>{this.state.version}</NavItem>
                         </Nav>
                         <Nav pullRight>
                             <LinkContainer to={'settings'}><NavItem > <Glyphicon glyph="wrench"/>{' '}Settings</NavItem></LinkContainer>

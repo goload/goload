@@ -1,6 +1,6 @@
 {
   "name": "downloader-client",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "Fast Gulp, Browserify, Babelify, Watchify and React build process",
   "author": "aab",
   "license": "MIT",
@@ -30,12 +30,15 @@
   },
   "devDependencies": {
     "alertify.js": "^1.0.11",
+    "bootstrap": "^3.3.6",
     "del": "^2.2.1",
     "gulp-clean-css": "^2.0.10",
     "gulp-concat": "^2.6.0",
+    "gulp-rename": "^1.2.2",
     "gulp-run": "^1.7.1",
     "gulp-uglify": "^1.5.4",
     "gulp-watch": "^4.3.8",
+    "gulp-zip": "^3.2.0",
     "lodash": "^4.13.1",
     "merge-stream": "^1.0.0"
   },

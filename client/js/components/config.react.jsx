@@ -3,7 +3,7 @@ import {Form, Col, FormGroup, FormControl, Glyphicon, ControlLabel, Button} from
 import $ from 'jquery'
 import alertify from "alertify.js";
 alertify.logPosition("top right");
-const _url = '/config';
+const _url = '/api/config';
 export class Configuration extends React.Component {
 
     constructor(props) {

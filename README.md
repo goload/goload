@@ -1,6 +1,6 @@
 ## Build with
 ```bash
-gulp buildAll
+gulp build
 ```
 
 ## Run
