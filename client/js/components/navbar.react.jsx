@@ -24,7 +24,7 @@ export class NavBar extends React.Component {
                 <Navbar >
                     <Navbar.Header>
                         <Navbar.Brand>
-                            <Link to={'/'}><Glyphicon glyph="download"/>{' '}Uploaded Downloader</Link>
+                            <Link to={'/'}><Glyphicon glyph="download"/>{' '}goload</Link>
                         </Navbar.Brand>
                         <Navbar.Toggle/>
                     </Navbar.Header>
