@@ -8,3 +8,6 @@ html {
 .glyphicon-info-sign {
     color: #555;
 }
+.progress-file.progress{
+    margin-bottom: 5px;
+}

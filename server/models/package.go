@@ -24,6 +24,8 @@ type Package struct {
 type File struct {
 	Url string `json:"url"`
 	Finished bool `json:"finished"`
+	Online bool `json:"online"`
+	checksum string
 	Progress float64 `json:"progress"`
 	filePath string
 	Filename string `json:"filename"`
@@ -36,7 +38,7 @@ type File struct {
 
 
 func (pack *Package) Download(downloader *Uploaded) {
-	log.Println("Downloading package" + pack.Name + " with "+ strconv.Itoa(len(pack.Files)) + " files")
+	log.Println("Downloading package " + pack.Name + " with "+ strconv.Itoa(len(pack.Files)) + " files")
 	pack.Finished = false
 	downloader.DownloadPackage(pack)
 	pack.Finished = true

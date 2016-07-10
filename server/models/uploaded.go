@@ -14,10 +14,11 @@ import (
 	"errors"
 	"github.com/cavaliercoder/grab"
 	"goload/server/models/configuration"
+	"regexp"
 )
 
 type Uploaded struct {
-	config *configuration.Configuration
+	config      *configuration.Configuration
 	loginCookie *http.Cookie
 }
 
@@ -46,24 +47,27 @@ func (ul *Uploaded) DownloadPackage(pack *Package) (error) {
 		return errors.New("Error creating directory " + savePath)
 	}
 	for _, file := range pack.Files {
-		link, error := ul.getDirectLink(file)
-		if (error != nil) {
-			file.Failed = true
-			file.Error = error
-			continue
-		}
-		fileName, size := getHeadParams(link)
+
+		online, fileName, checksum, size := getApiInfo(file)
 		file.Filename = fileName
+		file.Online = online
+		file.checksum = checksum
 		file.Size = size
 	}
 	pack.UpdateSize()
 	BATCH_SIZE := 1
 	i := 0
 	for i < len(pack.Files) {
-		requests := make([]*grab.Request,0)
-		requestMap :=make(map[*grab.Request]*File)
-		for b:=0; b < BATCH_SIZE && i+b <len(pack.Files); b++ {
-			file := pack.Files[i+b]
+		requests := make([]*grab.Request, 0)
+		requestMap := make(map[*grab.Request]*File)
+		for b := 0; b < BATCH_SIZE && i + b < len(pack.Files); b++ {
+			file := pack.Files[i + b]
+			if(!file.Online) {
+				file.Error = errors.New("Offline")
+				file.Failed = true
+				file.Progress = 100.0
+				continue
+			}
 			link, error := ul.getDirectLink(file)
 			if (error != nil) {
 				log.Println(error)
@@ -79,21 +83,21 @@ func (ul *Uploaded) DownloadPackage(pack *Package) (error) {
 				file.Error = requestError
 				continue
 			}
-			req.BufferSize = 4096*1024
+			req.BufferSize = 4096 * 1024
 			req.Size = file.Size
-			req.Filename = savePath+ "/" + file.Filename
+			req.Filename = savePath + "/" + file.Filename
 			requestMap[req] = file
-			requests = append(requests,req)
+			requests = append(requests, req)
 		}
-		i+= BATCH_SIZE
-		ul.downloadBatch(BATCH_SIZE,requests,requestMap,pack);
+		i += BATCH_SIZE
+		ul.downloadBatch(BATCH_SIZE, requests, requestMap, pack);
 
 	}
 	return nil
 }
 
-func (ul *Uploaded) downloadBatch(batchSize int, requests []*grab.Request,requestMap map[*grab.Request]*File, pack *Package){
-	grabClient:= grab.NewClient()
+func (ul *Uploaded) downloadBatch(batchSize int, requests []*grab.Request, requestMap map[*grab.Request]*File, pack *Package) {
+	grabClient := grab.NewClient()
 	t := time.NewTicker(200 * time.Millisecond)
 	respch := grabClient.DoBatch(batchSize, requests...)
 	completed := 0
@@ -103,7 +107,7 @@ func (ul *Uploaded) downloadBatch(batchSize int, requests []*grab.Request,reques
 		case resp := <-respch:
 			if resp != nil {
 				responses = append(responses, resp)
-				log.Printf("Started downloading %s %d / %d bytes (%d%%)\n", resp.Filename, resp.BytesTransferred(), resp.Size, int(100*resp.Progress()))
+				log.Printf("Started downloading %s %d / %d bytes (%d%%)\n", resp.Filename, resp.BytesTransferred(), resp.Size, int(100 * resp.Progress()))
 
 			}
 		case <-t.C:
@@ -115,13 +119,14 @@ func (ul *Uploaded) downloadBatch(batchSize int, requests []*grab.Request,reques
 						requestMap[resp.Request].Failed = true
 						requestMap[resp.Request].Progress = 100.0
 					} else {
-						log.Printf("Finished %s %d / %d bytes (%d%%)\n", resp.Filename, resp.BytesTransferred(), resp.Size, int(100*resp.Progress()))
+						log.Printf("Finished %s %d / %d bytes (%d%%)\n", resp.Filename, resp.BytesTransferred(), resp.Size, int(100 * resp.Progress()))
 						requestMap[resp.Request].Finished = true
-						requestMap[resp.Request].Progress = 100*resp.Progress()
+						requestMap[resp.Request].Progress = 100 * resp.Progress()
 
 						requestMap[resp.Request].Failed = false
 						requestMap[resp.Request].filePath = resp.Filename
-						log.Println("Average speed: " +bytefmt.ByteSize(uint64(resp.AverageBytesPerSecond())) + "/s")
+						requestMap[resp.Request].ETE = 0
+						log.Println("Average speed: " + bytefmt.ByteSize(uint64(resp.AverageBytesPerSecond())) + "/s")
 
 					}
 
@@ -135,7 +140,7 @@ func (ul *Uploaded) downloadBatch(batchSize int, requests []*grab.Request,reques
 				if resp != nil {
 					//TODO Speed + ETA
 					requestMap[resp.Request].DownloadSpeed = bytefmt.ByteSize(uint64(resp.AverageBytesPerSecond())) + "/s"
-					requestMap[resp.Request].Progress = 100*resp.Progress()
+					requestMap[resp.Request].Progress = 100 * resp.Progress()
 					requestMap[resp.Request].ETE = resp.ETA().Sub(time.Now())
 					pack.UpdateProgress()
 				}
@@ -183,13 +188,32 @@ func (ul *Uploaded)getDirectLink(file *File) (string, error) {
 
 }
 
-func getHeadParams(link string) (string, uint64) {
-	header, _ := http.Head(link)
-	length, _ := strconv.Atoi(header.Header.Get("Content-Length"))
-	fileNameBase := header.Header.Get("Content-Disposition")
-	searchString := `attachment; filename="`
-	fileName := fileNameBase[strings.Index(fileNameBase, searchString) + len(searchString):len(fileNameBase) - 1]
-	return fileName, uint64(length)
+func getApiInfo(file *File) (online bool, filename string, checksum string, size uint64) {
+	re := regexp.MustCompile(`https?://(?:www\.)?(uploaded\.(to|net)|ul\.to)(/file/|/?\?id=|.*?&id=|/)(?P<ID>\w+)`)
+	n1 := re.SubexpNames()
+	r2 := re.FindAllStringSubmatch(file.Url, -1)[0]
+	md := map[string]string{}
+	for i, n := range r2 {
+		md[n1[i]] = n
+	}
+	resp, err := http.PostForm("http://uploaded.net/api/filemultiple",
+		url.Values{"apikey":{"lhF2IeeprweDfu9ccWlxXVVypA5nA3EL"}, "id_0":{md["ID"]}})
+	defer resp.Body.Close()
+	if err != nil {
+		return false, "", "", 0
+	}
+	body, _ := ioutil.ReadAll(resp.Body)
+	stringBody := string(body);
+	results := strings.Split(stringBody, ",")
+	if results[0] != "online" {
+		return false, "", "", 0
+	}
+	online = true;
+	fileSize, _ := strconv.Atoi(results[2])
+	size = uint64(fileSize)
+	filename = results[4]
+	checksum = results[3]
+	return
 }
 
 func extractDirectLink(htmlString string) (string, error) {

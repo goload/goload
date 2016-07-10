@@ -1,5 +1,7 @@
 import React from 'react'
 import {ProgressBar, Collapse, Row, Col, Glyphicon, OverlayTrigger, Tooltip} from 'react-bootstrap'
+import moment from 'moment'
+require("moment-duration-format");
 export class Package extends React.Component {
     constructor(props) {
         super(props)
@@ -66,13 +68,17 @@ export class Package extends React.Component {
                                                 <Col sm={6}><Glyphicon
                                                     glyph="compressed"/>{' '}{file.filename != '' ? file.filename : file.url}{' '}
                                                     ({formatBytes(file.size)})</Col>
-                                                <Col className="text-right" sm={6}><Glyphicon
-                                                    glyph="arrow-down"/> {file.download_speed}</Col>
+                                                <Col className="text-right" sm={6}>
+                                                    <Glyphicon
+                                                        glyph="time"/> {moment.duration(file.ete/(1000*1000)).format()}
+                                                    {' '}
+                                                    <Glyphicon
+                                                        glyph="arrow-down"/> {file.download_speed}</Col>
                                             </Row>
-                                            <div><ProgressBar bsStyle={barStyle} active={file.progress < 100}
+                                            <ProgressBar className="progress-file" bsStyle={barStyle} active={file.progress < 100}
                                                               now={file.progress}
                                                               label={Math.round(file.progress)+"%"}/>
-                                            </div>
+
                                         </Col>
                                     </Row>)
                                 }

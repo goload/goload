@@ -147,7 +147,7 @@ gulp.task('copyPublic', ['cleanDist'], function () {
 gulp.task('build', ['cleanDist', 'buildAllGo', 'buildjs', 'buildcss', 'copyPublic'], function () {
     del.sync(['goload*.zip']);
     gulp.src('dist/**/*')
-        .pipe(zip('goload-'+version+'.zip'))
+        .pipe(zip('goload-v'+version+'.zip'))
         .pipe(gulp.dest('.'));
 
 });
