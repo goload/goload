@@ -15,6 +15,7 @@ import (
 	"github.com/cavaliercoder/grab"
 	"goload/server/models/configuration"
 	"regexp"
+	"encoding/hex"
 )
 
 const API_KEY string = "lhF2IeeprweDfu9ccWlxXVVypA5nA3EL"
@@ -88,6 +89,9 @@ func (ul *Uploaded) DownloadPackage(pack *Package) (error) {
 				file.Error = requestError
 				continue
 			}
+			b, _ := hex.DecodeString(file.checksum)
+			req.SetChecksum("md5", b)
+			req.RemoveOnError = true
 			req.BufferSize = 4096 * 1024
 			req.Size = file.Size
 			req.Filename = savePath + "/" + file.Filename
@@ -123,6 +127,7 @@ func (ul *Uploaded) downloadBatch(batchSize int, requests []*grab.Request, reque
 						log.Printf("Error downloading %s: %v\n", resp.Filename, resp.Error)
 						requestMap[resp.Request].Failed = true
 						requestMap[resp.Request].Progress = 100.0
+
 					} else {
 						log.Printf("Finished %s %d / %d bytes (%d%%)\n", resp.Filename, resp.BytesTransferred(), resp.Size, int(100 * resp.Progress()))
 						requestMap[resp.Request].Finished = true

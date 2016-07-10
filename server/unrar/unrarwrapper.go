@@ -11,7 +11,7 @@ func Unrar(file string,dest string,password string) error{
 		password = "Empty"
 	}
 	cmd := exec.Command("unrar", "x", "-o-","-p"+password, file, dest )
-	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
     err := cmd.Start()
 	if  err != nil {
 		log.Fatal(err)
