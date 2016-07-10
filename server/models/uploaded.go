@@ -53,7 +53,6 @@ func (ul *Uploaded) DownloadPackage(pack *Package) (error) {
 		return errors.New("Error creating directory " + savePath)
 	}
 	for _, file := range pack.Files {
-
 		online, fileName, checksum, size := getApiInfo(file)
 		file.Filename = fileName
 		file.Online = online
@@ -70,13 +69,14 @@ func (ul *Uploaded) DownloadPackage(pack *Package) (error) {
 			file := pack.Files[i + b]
 			if (!file.Online) {
 				file.Error = errors.New("Offline")
+				log.Println("Offline: " + file.Url)
 				file.Failed = true
 				file.Progress = 100.0
 				continue
 			}
 			link, error := ul.getDirectLink(file)
 			if (error != nil) {
-				log.Println(error)
+				log.Println("Get Direct Link failed "+error.Error())
 				file.Failed = true
 				file.Progress = 100.0
 				file.Error = error
@@ -90,7 +90,7 @@ func (ul *Uploaded) DownloadPackage(pack *Package) (error) {
 				continue
 			}
 			b, _ := hex.DecodeString(file.checksum)
-			req.SetChecksum("md5", b)
+			req.SetChecksum("sha1", b)
 			req.RemoveOnError = true
 			req.BufferSize = 4096 * 1024
 			req.Size = file.Size
@@ -128,11 +128,11 @@ func (ul *Uploaded) downloadBatch(batchSize int, requests []*grab.Request, reque
 						requestMap[resp.Request].Failed = true
 						requestMap[resp.Request].Progress = 100.0
 
+
 					} else {
 						log.Printf("Finished %s %d / %d bytes (%d%%)\n", resp.Filename, resp.BytesTransferred(), resp.Size, int(100 * resp.Progress()))
 						requestMap[resp.Request].Finished = true
 						requestMap[resp.Request].Progress = 100 * resp.Progress()
-
 						requestMap[resp.Request].Failed = false
 						requestMap[resp.Request].filePath = resp.Filename
 						requestMap[resp.Request].ETE = 0
@@ -192,7 +192,7 @@ func (ul *Uploaded)getDirectLink(file *File) (string, error) {
 	htmlString := string(dddata)
 	link, linkError := extractDirectLink(htmlString)
 	if linkError != nil {
-		return "", errors.New("File " + file.Url + " not found")
+		return "", errors.New("Link " + file.Url + " not found")
 	}
 	return link, nil
 
@@ -221,7 +221,7 @@ func getApiInfo(file *File) (online bool, filename string, checksum string, size
 	online = true;
 	fileSize, _ := strconv.Atoi(results[2])
 	size = uint64(fileSize)
-	filename = results[4]
+	filename = results[4][:len(results[4])-1]
 	checksum = results[3]
 	return
 }
