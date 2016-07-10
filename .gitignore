@@ -11,3 +11,4 @@
 /vendor/
 /testlinks
 /unrartest
+*.DS_Store
