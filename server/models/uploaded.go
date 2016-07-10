@@ -17,6 +17,11 @@ import (
 	"regexp"
 )
 
+const API_KEY string = "lhF2IeeprweDfu9ccWlxXVVypA5nA3EL"
+const API_URL string = "http://uploaded.net/api/filemultiple"
+const URL_PATTERN = `https?://(?:www\.)?(uploaded\.(to|net)|ul\.to)(/file/|/?\?id=|.*?&id=|/)(?P<ID>\w+)`
+const LOGIN_URL = "http://uploaded.net/io/login"
+
 type Uploaded struct {
 	config      *configuration.Configuration
 	loginCookie *http.Cookie
@@ -62,7 +67,7 @@ func (ul *Uploaded) DownloadPackage(pack *Package) (error) {
 		requestMap := make(map[*grab.Request]*File)
 		for b := 0; b < BATCH_SIZE && i + b < len(pack.Files); b++ {
 			file := pack.Files[i + b]
-			if(!file.Online) {
+			if (!file.Online) {
 				file.Error = errors.New("Offline")
 				file.Failed = true
 				file.Progress = 100.0
@@ -189,15 +194,15 @@ func (ul *Uploaded)getDirectLink(file *File) (string, error) {
 }
 
 func getApiInfo(file *File) (online bool, filename string, checksum string, size uint64) {
-	re := regexp.MustCompile(`https?://(?:www\.)?(uploaded\.(to|net)|ul\.to)(/file/|/?\?id=|.*?&id=|/)(?P<ID>\w+)`)
+	re := regexp.MustCompile(URL_PATTERN)
 	n1 := re.SubexpNames()
 	r2 := re.FindAllStringSubmatch(file.Url, -1)[0]
 	md := map[string]string{}
 	for i, n := range r2 {
 		md[n1[i]] = n
 	}
-	resp, err := http.PostForm("http://uploaded.net/api/filemultiple",
-		url.Values{"apikey":{"lhF2IeeprweDfu9ccWlxXVVypA5nA3EL"}, "id_0":{md["ID"]}})
+	resp, err := http.PostForm(API_URL,
+		url.Values{"apikey":{API_KEY}, "id_0":{md["ID"]}})
 	defer resp.Body.Close()
 	if err != nil {
 		return false, "", "", 0
@@ -232,7 +237,7 @@ func (ul *Uploaded) login() error {
 	data.Set("id", ul.config.Account.Username)
 	data.Add("pw", ul.config.Account.Password)
 	client := &http.Client{}
-	r, _ := http.NewRequest("POST", "http://uploaded.net/io/login", bytes.NewBufferString(data.Encode()))
+	r, _ := http.NewRequest("POST", LOGIN_URL, bytes.NewBufferString(data.Encode()))
 	r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	r.Header.Add("Content-Length", strconv.Itoa(len(data.Encode())))
 	login, _ := client.Do(r)
