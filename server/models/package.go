@@ -5,9 +5,10 @@ import (
 "strconv"
 "regexp"
 "strings"
-"goload/server/unrar"
+
 
 	"time"
+	"goload/server/unrar"
 )
 
 type Package struct {
@@ -27,6 +28,7 @@ type File struct {
 	Online bool `json:"online"`
 	checksum string
 	Progress float64 `json:"progress"`
+	UnrarProgress float64 `json:"unrar_progress"`
 	filePath string
 	Filename string `json:"filename"`
 	Size uint64 `json:"size"`
@@ -72,7 +74,15 @@ func (pack *Package) Unrar(path string) {
 			continue;
 		} 
 		if r.MatchString(file.filePath) || !strings.Contains(file.filePath,`part`) {
-			unrar.Unrar(file.filePath,path+pack.Name+"/",pack.Password)
+			c := unrar.Unrar(file.filePath,path+pack.Name+"/",pack.Password)
+			for i:= range c {
+				if i.Error != nil {
+					log.Println(i.Error)
+					continue
+				}
+				log.Println(i.Progess)
+				file.UnrarProgress = i.Progess
+			}
 		}
 	}
 }
