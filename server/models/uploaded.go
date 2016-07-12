@@ -55,7 +55,7 @@ func (ul *Uploaded) DownloadPackage(pack *Package) (error) {
 	for _, file := range pack.Files {
 		online, fileName, checksum, size := getApiInfo(file)
 		file.Filename = fileName
-		file.Online = online
+		file.Offline = !online
 		file.checksum = checksum
 		file.Size = size
 	}
@@ -67,7 +67,7 @@ func (ul *Uploaded) DownloadPackage(pack *Package) (error) {
 		requestMap := make(map[*grab.Request]*File)
 		for b := 0; b < BATCH_SIZE && i + b < len(pack.Files); b++ {
 			file := pack.Files[i + b]
-			if (!file.Online) {
+			if (file.Offline) {
 				file.Error = errors.New("Offline")
 				log.Println("Offline: " + file.Url)
 				file.Failed = true
@@ -201,7 +201,11 @@ func (ul *Uploaded)getDirectLink(file *File) (string, error) {
 func getApiInfo(file *File) (online bool, filename string, checksum string, size uint64) {
 	re := regexp.MustCompile(URL_PATTERN)
 	n1 := re.SubexpNames()
-	r2 := re.FindAllStringSubmatch(file.Url, -1)[0]
+	matches := re.FindAllStringSubmatch(file.Url, -1)
+	if matches == nil{
+		return false, "", "", 0
+	}
+	r2 := matches[0]
 	md := map[string]string{}
 	for i, n := range r2 {
 		md[n1[i]] = n

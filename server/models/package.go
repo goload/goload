@@ -23,19 +23,20 @@ type Package struct {
 }
 
 type File struct {
-	Url string `json:"url"`
-	Finished bool `json:"finished"`
-	Online bool `json:"online"`
-	checksum string
-	Progress float64 `json:"progress"`
+	Url           string `json:"url"`
+	Finished      bool `json:"finished"`
+	Offline       bool `json:"offline"`
+	checksum      string
+	Progress      float64 `json:"progress"`
 	UnrarProgress float64 `json:"unrar_progress"`
-	filePath string
-	Filename string `json:"filename"`
-	Size uint64 `json:"size"`
+	Extracting    bool `json:"extracting"`
+	filePath      string
+	Filename      string `json:"filename"`
+	Size          uint64 `json:"size"`
 	DownloadSpeed string `json:"download_speed"`
-	Failed bool `json:"failed"`
-	ETE time.Duration `json:"ete"`
-	Error error
+	Failed        bool `json:"failed"`
+	ETE           time.Duration `json:"ete"`
+	Error         error
 }
 
 
@@ -73,8 +74,9 @@ func (pack *Package) Unrar(path string) {
 		if file.filePath == ""{
 			continue;
 		} 
-		if r.MatchString(file.filePath) || !strings.Contains(file.filePath,`part`) {
+		if r.MatchString(file.Filename) || !strings.Contains(file.Filename,`part`) {
 			c := unrar.Unrar(file.filePath,path+pack.Name+"/",pack.Password)
+			file.Extracting = true
 			for i:= range c {
 				if i.Error != nil {
 					log.Println(i.Error)
@@ -83,6 +85,7 @@ func (pack *Package) Unrar(path string) {
 				log.Println(i.Progess)
 				file.UnrarProgress = i.Progess
 			}
+			file.Extracting = false
 		}
 	}
 }
