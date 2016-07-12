@@ -56,7 +56,7 @@ func (ul *Uploaded) DownloadPackage(pack *Package) (error) {
 		online, fileName, checksum, size := getApiInfo(file)
 		file.Filename = fileName
 		file.Offline = !online
-		file.checksum = checksum
+		file.Checksum = checksum
 		file.Size = size
 	}
 	pack.UpdateSize()
@@ -89,7 +89,7 @@ func (ul *Uploaded) DownloadPackage(pack *Package) (error) {
 				file.Error = requestError
 				continue
 			}
-			b, _ := hex.DecodeString(file.checksum)
+			b, _ := hex.DecodeString(file.Checksum)
 			req.SetChecksum("sha1", b)
 			req.RemoveOnError = true
 			req.BufferSize = 4096 * 1024

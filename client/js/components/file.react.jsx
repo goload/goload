@@ -11,6 +11,7 @@ export class File extends React.Component {
 
     render() {
         var file = this.props.file;
+        var progress = file.progress;
         var barStyle = null;
         if (file.failed) {
             barStyle = "danger"
@@ -25,6 +26,7 @@ export class File extends React.Component {
         }
         var cog;
         if(file.extracting) {
+            progress = file.unrar_progress;
             cog = (<OverlayTrigger placement="top" overlay={<Tooltip id="extractingTooltip">Extracting</Tooltip>}>
                 <Glyphicon
                     glyph="cog" className="gly-spin"/>
@@ -48,9 +50,9 @@ export class File extends React.Component {
                         <Glyphicon
                             glyph="arrow-down"/> {file.download_speed}</Col>
                 </Row>
-                <ProgressBar className="progress-file" bsStyle={barStyle} active={file.progress < 100}
-                             now={file.progress}
-                             label={Math.round(file.progress)+"%"}/>
+                <ProgressBar className="progress-file" bsStyle={barStyle} active={progress < 100}
+                             now={progress}
+                             label={Math.round(progress)+"%"}/>
 
             </Col>
         </Row>)

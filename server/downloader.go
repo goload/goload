@@ -12,6 +12,7 @@ import (
 	"goload/server/models/configuration"
 	"os"
 	"os/signal"
+	"github.com/boltdb/bolt"
 )
 
 
@@ -22,7 +23,10 @@ func main() {
 	if(error!= nil) {
 		log.Fatal(error)
 	}
-
+	db,dberr := bolt.Open("goload_database.db",0600,nil)
+	if dberr != nil {
+		log.Fatal(dberr)
+	}
 
 	router := httprouter.New()
 	router.ServeFiles("/fonts/*filepath", http.Dir("./public/fonts"))
@@ -39,8 +43,9 @@ func main() {
 	})
 
 	ul := models.NewUploaded(config)
-	database := data.NewDatastore()
-	packageController := controllers.NewPackageController(database,ul)
+	database := data.NewDatastore(db)
+	database.LoadData()
+	packageController := controllers.NewPackageController(database)
 	router.DELETE("/api/packages/:id", packageController.RemovePackage)
 	router.POST("/api/packages", packageController.CreatePackage)
 	router.GET("/api/packages", packageController.ListPackages)
@@ -61,6 +66,7 @@ func main() {
 	go func(){
 		for range c {
 			log.Println("Shutting Down")
+			database.SaveData()
 			os.Exit(0)
 		}
 	}()
@@ -78,5 +84,6 @@ func LoopPackages(database *data.Datastore, ul *models.Uploaded,config *configur
 			}
 		}
 		time.Sleep(time.Millisecond * 50)
+		database.SaveData()
 	}
 }

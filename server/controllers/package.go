@@ -12,11 +12,11 @@ import (
 
 type PackageController struct {
 	database *data.Datastore
-	ul *models.Uploaded
+
 }
 
-func NewPackageController(database *data.Datastore, ul *models.Uploaded) *PackageController {
-	return &PackageController{database:database,ul:ul}
+func NewPackageController(database *data.Datastore) *PackageController {
+	return &PackageController{database:database}
 }
 
 // GetUser retrieves an individual user resource
@@ -66,7 +66,7 @@ func (uc PackageController) RetryPackage(w http.ResponseWriter, r *http.Request,
 		w.WriteHeader(404)
 		return
 	}
-	pack.Download(uc.ul)
+	pack.Retry()
 	w.WriteHeader(200)
 }
 

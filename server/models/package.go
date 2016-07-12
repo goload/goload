@@ -26,7 +26,7 @@ type File struct {
 	Url           string `json:"url"`
 	Finished      bool `json:"finished"`
 	Offline       bool `json:"offline"`
-	checksum      string
+	Checksum      string `json:"-"`
 	Progress      float64 `json:"progress"`
 	UnrarProgress float64 `json:"unrar_progress"`
 	Extracting    bool `json:"extracting"`
@@ -68,6 +68,12 @@ func (pack *Package) Update() {
 
 }
 
+func (pack *Package) Retry() {
+	pack.Finished = false
+	//TODO only temporary solution
+
+}
+
 func (pack *Package) Unrar(path string) {
 	r, _ := regexp.Compile(`.*part0*1\.rar`)
 	for _,file :=range pack.Files{
@@ -82,7 +88,6 @@ func (pack *Package) Unrar(path string) {
 					log.Println(i.Error)
 					continue
 				}
-				log.Println(i.Progess)
 				file.UnrarProgress = i.Progess
 			}
 			file.Extracting = false

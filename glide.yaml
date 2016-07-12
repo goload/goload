@@ -1,6 +1,7 @@
-package: uploaded-downloader
+package: goload
 import:
 - package: github.com/cavaliercoder/grab
 - package: github.com/julienschmidt/httprouter
 - package: github.com/nu7hatch/gouuid
 - package: github.com/pivotal-golang/bytefmt
+- package: github.com/boltdb/bolt
