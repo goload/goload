@@ -85,8 +85,8 @@ func (pack *Package) Unrar(path string) {
 				log.Println(i.Error)
 				continue
 			}
+			pack.UnrarProgress += (i.Progess-file.UnrarProgress)/float64(len(unrarFiles))
 			file.UnrarProgress = i.Progess
-			pack.UnrarProgress += i.Progess/float64(len(unrarFiles))
 		}
 		log.Println("Extrated " + file.filePath + " successfully")
 		file.Extracting = false
