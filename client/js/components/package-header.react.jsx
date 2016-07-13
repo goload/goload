@@ -1,20 +1,25 @@
 import React from "react";
 import {ProgressBar, Row, Col, Glyphicon, OverlayTrigger, Tooltip} from "react-bootstrap";
-
+import {ExtractIndicator} from './extract-indicator.react.jsx'
 export class PackageHeader extends React.Component {
     constructor(props) {
         super(props)
     }
 
     render() {
+        var progress = this.props.package.progress;
+        var indicator;
+        if (this.props.package.extracting) {
+            progress = this.props.package.unrar_progress;
+            indicator = (<ExtractIndicator/>);
+        }
         return (<div>
             <Row >
                 <Col sm={6} role="button"
                      onClick={this.props.toggleCollapse}>
-                    <OverlayTrigger placement="top" overlay={<Tooltip id="expandTooltip">Expand</Tooltip>}>
-                        <Glyphicon
-                            glyph="folder-open"/>
-                    </OverlayTrigger>
+                    {indicator}{' '}
+                    <Glyphicon
+                        glyph="folder-open"/>
                     {' '}{' '}{this.props.package.name}{' '}{'(' + formatBytes(this.props.package.size, 1) + ')'}
                 </Col>
 
@@ -34,9 +39,9 @@ export class PackageHeader extends React.Component {
             </Row>
             <Row>
                 <Col sm={12}>
-                    <ProgressBar bsStyle="success" active={this.props.package.progress < 100}
-                                 now={this.props.package.progress}
-                                 label={Math.round(this.props.package.progress)+"%"}/>
+                    <ProgressBar bsStyle="success" active={progress < 100}
+                                 now={progress}
+                                 label={Math.round(progress)+"%"}/>
                 </Col>
             </Row>
         </div>)

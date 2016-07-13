@@ -1,8 +1,6 @@
-/**
- * Created by andre on 12.07.16.
- */
 import React from "react";
 import {ProgressBar, Row, Col, Glyphicon, OverlayTrigger, Tooltip} from "react-bootstrap";
+import {ExtractIndicator} from './extract-indicator.react.jsx'
 import moment from "moment";
 export class File extends React.Component {
     constructor(props) {
@@ -24,20 +22,17 @@ export class File extends React.Component {
                 glyph = "remove-circle"
             }
         }
-        var cog;
+        var indicator;
         if(file.extracting) {
             progress = file.unrar_progress;
-            cog = (<OverlayTrigger placement="top" overlay={<Tooltip id="extractingTooltip">Extracting</Tooltip>}>
-                <Glyphicon
-                    glyph="cog" className="gly-spin"/>
-            </OverlayTrigger>);
+            indicator = (<ExtractIndicator/>);
         }
         return (<Row>
             {/*<Col sm={1}><Glyphicon glyph={glyph} style={{'fontSize':'2.2em'}}/></Col>*/}
             <Col smOffset={0} sm={12}>
                 <Row>
                     <Col sm={6}>
-                        {cog}{' '}
+                        {indicator}{' '}
                         <Glyphicon
                         glyph="compressed"/>
                         {' '}{file.filename != '' ? file.filename : file.url}{' '}
