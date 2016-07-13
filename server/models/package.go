@@ -62,6 +62,14 @@ func (pack *Package) UpdateSize() {
 	pack.Size = size
 }
 
+func (pack *Package) updateUnrarProgress(files []*File) {
+	unrarProgress := float64(0.0)
+	for _, file := range files {
+		unrarProgress += file.UnrarProgress
+	}
+	pack.UnrarProgress = unrarProgress / float64(len(files))
+}
+
 func (pack *Package) Update() {
 	pack.UpdateProgress()
 	pack.UpdateSize()
@@ -85,8 +93,8 @@ func (pack *Package) Unrar(path string) {
 				log.Println(i.Error)
 				continue
 			}
-			pack.UnrarProgress += (i.Progess-file.UnrarProgress)/float64(len(unrarFiles))
 			file.UnrarProgress = i.Progess
+			pack.updateUnrarProgress(unrarFiles)
 		}
 		log.Println("Extrated " + file.filePath + " successfully")
 		file.Extracting = false
