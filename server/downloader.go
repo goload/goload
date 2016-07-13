@@ -70,6 +70,12 @@ func main() {
 			os.Exit(0)
 		}
 	}()
+	go func() {
+		for{
+			time.Sleep(time.Hour * 1)
+			database.SaveData()
+		}
+	}()
 	log.Fatal(http.ListenAndServe(":3000", router))
 
 }
@@ -83,7 +89,5 @@ func LoopPackages(database *data.Datastore, ul *models.Uploaded,config *configur
 				go pack.Unrar(config.Dirs.ExtractDir)
 			}
 		}
-		time.Sleep(time.Millisecond * 50)
-		database.SaveData()
 	}
 }
