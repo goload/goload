@@ -148,7 +148,6 @@ func (ul *Uploaded) downloadBatch(batchSize int, requests []*grab.Request, reque
 			}
 			for _, resp := range responses {
 				if resp != nil {
-					//TODO Speed + ETA
 					requestMap[resp.Request].DownloadSpeed = bytefmt.ByteSize(uint64(resp.AverageBytesPerSecond())) + "/s"
 					requestMap[resp.Request].Progress = 100 * resp.Progress()
 					requestMap[resp.Request].ETE = resp.ETA().Sub(time.Now())
