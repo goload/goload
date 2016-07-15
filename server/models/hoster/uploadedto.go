@@ -1,4 +1,4 @@
-package models
+package hoster
 
 import (
 	"log"
@@ -24,7 +24,6 @@ const URL_PATTERN = `https?://(?:www\.)?(uploaded\.(to|net)|ul\.to)(/file/|/?\?i
 const LOGIN_URL = "http://uploaded.net/io/login"
 
 type Uploaded struct {
-	config      *configuration.Configuration
 	loginCookie *http.Cookie
 }
 

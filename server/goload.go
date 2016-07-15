@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/signal"
 	"github.com/boltdb/bolt"
+	"goload/server/models/hoster"
 )
 
 
@@ -42,7 +43,7 @@ func main() {
 		tmpl.Execute(w, nil)
 	})
 
-	ul := models.NewUploaded(config)
+	ul := hoster.NewUploaded(config)
 	database := data.NewDatastore(db)
 	database.LoadData()
 	packageController := controllers.NewPackageController(database)
@@ -60,7 +61,8 @@ func main() {
 		versionJson := []byte(`{"version":"`+Version+`"}`)
 		w.Write(versionJson)
 	})
-	go LoopPackages(database, ul,config);
+	downloader:= CreateDownloader(database,config)
+	go downloader.Download()
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
 	go func(){
@@ -80,7 +82,7 @@ func main() {
 
 }
 
-func LoopPackages(database *data.Datastore, ul *models.Uploaded,config *configuration.Configuration) {
+func LoopPackages(database *data.Datastore, ul *hoster.Uploaded,config *configuration.Configuration) {
 	log.Println("Starting Download loop")
 	for {
 		for _, pack := range database.GetPackages() {
