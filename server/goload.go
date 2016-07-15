@@ -89,5 +89,6 @@ func LoopPackages(database *data.Datastore, ul *models.Uploaded,config *configur
 				go pack.Unrar(config.Dirs.ExtractDir)
 			}
 		}
+		time.Sleep(time.Millisecond * 50)
 	}
 }
