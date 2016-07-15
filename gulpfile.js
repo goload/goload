@@ -119,16 +119,16 @@ gulp.task('cleanDist', function () {
 
 gulp.task('buildAllGo', ['cleanDist'], function () {
     return merge(
-        run('env GOOS=linux GOARCH=arm go build -ldflags "-X main.Version='+version+'" -o dist/linux-arm/server goload/server').exec(),
-        run('env GOOS=linux GOARCH=arm64 go build -ldflags "-X main.Version='+version+'" -o dist/linux-arm64/server goload/server').exec(),
-        run('env GOOS=linux GOARCH=amd64 go build -ldflags "-X main.Version='+version+'" -o dist/linux-amd64/server goload/server').exec(),
-        run('env GOOS=linux GOARCH=386 go build -ldflags "-X main.Version='+version+'" -o dist/linux-386/server goload/server').exec(),
+        run('env GOOS=linux GOARCH=arm go build -ldflags "-X main.Version='+version+'" -o dist/linux-arm/goload goload/server').exec(),
+        run('env GOOS=linux GOARCH=arm64 go build -ldflags "-X main.Version='+version+'" -o dist/linux-arm64/goload goload/server').exec(),
+        run('env GOOS=linux GOARCH=amd64 go build -ldflags "-X main.Version='+version+'" -o dist/linux-amd64/goload goload/server').exec(),
+        run('env GOOS=linux GOARCH=386 go build -ldflags "-X main.Version='+version+'" -o dist/linux-386/goload goload/server').exec(),
         //windows
-        run('env GOOS=windows GOARCH=386 go build -ldflags "-X main.Version='+version+'" -o dist/windows-386/server goload/server').exec(),
-        run('env GOOS=windows GOARCH=amd64 go build -ldflags "-X main.Version='+version+'" -o dist/windows-amd64/server goload/server').exec(),
+        run('env GOOS=windows GOARCH=386 go build -ldflags "-X main.Version='+version+'" -o dist/windows-386/goload goload/server').exec(),
+        run('env GOOS=windows GOARCH=amd64 go build -ldflags "-X main.Version='+version+'" -o dist/windows-amd64/goload goload/server').exec(),
         //osx
-        run('env GOOS=darwin GOARCH=amd64 go build -ldflags "-X main.Version='+version+'" -o dist/osx-amd64/server goload/server').exec(),
-        run('env GOOS=darwin GOARCH=386 go build -ldflags "-X main.Version='+version+'" -o dist/osx-386/server goload/server').exec()
+        run('env GOOS=darwin GOARCH=amd64 go build -ldflags "-X main.Version='+version+'" -o dist/osx-amd64/goload goload/server').exec(),
+        run('env GOOS=darwin GOARCH=386 go build -ldflags "-X main.Version='+version+'" -o dist/osx-386/goload./t goload/server').exec()
     );
 
     //env GOOS=darwin GOARCH=arm64 go build -o build/osx-arm64/server goload/server
