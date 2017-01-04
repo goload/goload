@@ -15,6 +15,7 @@ type Package struct {
 	Name          string `json:"name"`
 	Finished      bool `json:"finished"`
 	Files         []*File  `json:"files"`
+	DLC	      string `json:"dlc"`
 	Password      string `json:"password"`
 	Progress      float64 `json:"progress"`
 	UnrarProgress float64 `json:"unrar_progress"`

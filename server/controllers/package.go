@@ -8,6 +8,7 @@ import (
 	"github.com/nu7hatch/gouuid"
 	"goload/server/data"
 	"time"
+	"goload/server/util"
 )
 
 type PackageController struct {
@@ -29,7 +30,7 @@ func (uc PackageController) ListPackages(w http.ResponseWriter, r *http.Request,
 
 }
 
-func (uc PackageController) CreatePackage(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+func (pc PackageController) CreatePackage(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	// Stub an user to be populated from the body
 	pack := &models.Package{}
 	error := json.NewDecoder(r.Body).Decode(pack)
@@ -40,17 +41,20 @@ func (uc PackageController) CreatePackage(w http.ResponseWriter, r *http.Request
 	u4, _ := uuid.NewV4()
 	pack.Id = u4.String()
 	pack.DateAdded = time.Now()
-	uc.database.AddPackage(pack)
+	if pack.DLC != "" {
+		pack.Files = util.DecodeDLC(pack.DLC)
+	}
+	pc.database.AddPackage(pack)
 	pjson, _ := json.Marshal(pack)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(201)
 	w.Write(pjson)
 }
 
-func (uc PackageController) RemovePackage(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+func (pc PackageController) RemovePackage(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	// Stub an user to be populated from the body
 	id := p.ByName("id")
-	success := uc.database.RemovePackage(id)
+	success := pc.database.RemovePackage(id)
 	if !success {
 		w.WriteHeader(404)
 		return
@@ -58,10 +62,10 @@ func (uc PackageController) RemovePackage(w http.ResponseWriter, r *http.Request
 	w.WriteHeader(200)
 }
 
-func (uc PackageController) RetryPackage(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+func (pc PackageController) RetryPackage(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	// Stub an user to be populated from the body
 	id := p.ByName("id")
-	pack,exists := uc.database.GetPackage(id)
+	pack,exists := pc.database.GetPackage(id)
 	if !exists || !pack.Finished {
 		w.WriteHeader(404)
 		return

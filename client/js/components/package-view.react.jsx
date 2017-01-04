@@ -26,10 +26,12 @@ export class PackageView extends React.Component {
             packages: [],
             packageName: '',
             links: '',
-            password: ''
+            password: '',
+            dlc:''
         };
         this.handleLinks = this.handleLinks.bind(this);
         this.handlePassword = this.handlePassword.bind(this);
+        this.handleDLC = this.handleDLC.bind(this);
         this.handlePackageName = this.handlePackageName.bind(this);
         this.submitPackage = this.submitPackage.bind(this);
         this.loadPackages = this.loadPackages.bind(this);
@@ -65,6 +67,10 @@ export class PackageView extends React.Component {
         this.setState({password: e.target.value});
     }
 
+    handleDLC(e) {
+        this.setState({dlc: e.target.value});
+    }
+
     handlePackageName(e) {
         this.setState({packageName: e.target.value});
     }
@@ -78,7 +84,8 @@ export class PackageView extends React.Component {
         var data = {
             name: this.state.packageName,
             files: [],
-            password: this.state.password
+            password: this.state.password,
+            dlc:this.state.dlc
         };
         _.forEach(splittetLinks, link => {
             if (link !== '') {
@@ -91,7 +98,8 @@ export class PackageView extends React.Component {
             this.setState({
                 packageName: '',
                 links: '',
-                password: ''
+                password: '',
+                dlc:''
             });
             this.loadPackages()
         }).fail(()=> {
@@ -166,6 +174,18 @@ export class PackageView extends React.Component {
                                          value={this.state.links}
                                          placeholder="Links"
                                          onChange={this.handleLinks}/>
+                        </Col>
+                    </FormGroup>
+                    <FormGroup >
+                        <Col componentClass={ControlLabel} sm={2}>
+                            DLC
+                        </Col>
+                        <Col sm={4}>
+                            <FormControl col
+                                         type="text"
+                                         value={this.state.dlc}
+                                         placeholder="dlc content"
+                                         onChange={this.handleDLC}/>
                         </Col>
                     </FormGroup>
 
