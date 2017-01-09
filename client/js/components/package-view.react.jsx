@@ -27,7 +27,7 @@ export class PackageView extends React.Component {
             packageName: '',
             links: '',
             password: '',
-            dlc:''
+            dlcfile:''
         };
         this.handleLinks = this.handleLinks.bind(this);
         this.handlePassword = this.handlePassword.bind(this);
@@ -68,7 +68,8 @@ export class PackageView extends React.Component {
     }
 
     handleDLC(e) {
-        this.setState({dlc: e.target.value});
+        console.log(e.target.value)
+        this.setState({dlcfile: e.target.files[0]});
     }
 
     handlePackageName(e) {
@@ -80,31 +81,36 @@ export class PackageView extends React.Component {
     }
 
     submitPackage() {
-        var splittetLinks = this.state.links.trim().split(/\s/g);
-        var data = {
-            name: this.state.packageName,
-            files: [],
-            password: this.state.password,
-            dlc:this.state.dlc
-        };
-        _.forEach(splittetLinks, link => {
-            if (link !== '') {
-                data.files.push({'url': link})
-            }
-        });
-        $.post(_url, JSON.stringify(data)).done(()=> {
-
-            alertify.delay(2000).success('Package added');
-            this.setState({
-                packageName: '',
-                links: '',
-                password: '',
-                dlc:''
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            var dlc = e.target.result;
+            var splittetLinks = this.state.links.trim().split(/\s/g);
+            var data = {
+                name: this.state.packageName,
+                files: [],
+                password: this.state.password,
+                dlc:dlc
+            };
+            _.forEach(splittetLinks, link => {
+                if (link !== '') {
+                    data.files.push({'url': link})
+                }
             });
-            this.loadPackages()
-        }).fail(()=> {
-            alertify.delay(2000).error('No package name provided');
-        })
+            $.post(_url, JSON.stringify(data)).done(()=> {
+
+                alertify.delay(2000).success('Package added');
+                this.setState({
+                    packageName: '',
+                    links: '',
+                    password: '',
+                    dlcfile:''
+                });
+                this.loadPackages()
+            }).fail(()=> {
+                alertify.delay(2000).error('No package name provided');
+            })
+        }.bind(this);
+        reader.readAsText(this.state.dlcfile);
 
     }
 
@@ -178,12 +184,12 @@ export class PackageView extends React.Component {
                     </FormGroup>
                     <FormGroup >
                         <Col componentClass={ControlLabel} sm={2}>
-                            DLC
+                            DLC File
                         </Col>
                         <Col sm={4}>
                             <FormControl col
-                                         type="text"
-                                         value={this.state.dlc}
+                                         type="file"
+                                         accept=".dlc"
                                          placeholder="dlc content"
                                          onChange={this.handleDLC}/>
                         </Col>
