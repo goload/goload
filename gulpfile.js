@@ -79,7 +79,7 @@ gulp.task('css', function () {
         .pipe(gulp.dest(config.js.outputDir))
 });
 
-gulp.task('buildjs', ['cleanDist'], function () {
+gulp.task('buildjs', function () {
     process.env.NODE_ENV = 'production';
     var bundler = browserify(config.js.src);
     bundler.transform(babelify, {presets: ['es2015', 'react']});
@@ -96,7 +96,7 @@ gulp.task('buildjs', ['cleanDist'], function () {
         .pipe(bundleTimer); // Output time timing of the file creation
 });
 
-gulp.task('buildcss', ['cleanDist'], function () {
+gulp.task('buildcss', function () {
     return gulp.src(['node_modules/bootstrap/dist/css/bootstrap.min.css', 'client/css/**/*.css'])
         .pipe(concat('style.css'))
         .pipe(cleanCSS())
@@ -104,20 +104,21 @@ gulp.task('buildcss', ['cleanDist'], function () {
 });
 
 gulp.task('watch', function () {
-    gulp.watch('client/css/**/*.css', ['css']);
-    gulp.watch('client/js/**/*.jsx', ['js']);
+    gulp.watch('client/css/**/*.css').on('change', gulp.series('css'));
+    gulp.watch('client/js/**/*.jsx').on('change', gulp.series('js'));
 });
 
 // Gulp task for build
-gulp.task('default', ['watch', 'js', 'css'], function () {
+gulp.task('default', gulp.parallel('watch', 'js', 'css', function () {
     livereload.listen(); // Start livereload server
+}));
+
+gulp.task('cleanDist', function (done) {
+    del.sync(['./dist']);
+    done();
 });
 
-gulp.task('cleanDist', function () {
-    return del.sync(['./dist']);
-});
-
-gulp.task('buildAllGo', ['cleanDist'], function () {
+gulp.task('buildAllGo', gulp.series('cleanDist', function (done) {
     return merge(
         run('env GOOS=linux GOARCH=arm go build -ldflags "-X main.Version='+version+'" -o dist/linux-arm/goload goload/server').exec(),
         run('env GOOS=linux GOARCH=arm64 go build -ldflags "-X main.Version='+version+'" -o dist/linux-arm64/goload goload/server').exec(),
@@ -128,14 +129,13 @@ gulp.task('buildAllGo', ['cleanDist'], function () {
         run('env GOOS=windows GOARCH=amd64 go build -ldflags "-X main.Version='+version+'" -o dist/windows-amd64/goload goload/server').exec(),
         //osx
         run('env GOOS=darwin GOARCH=amd64 go build -ldflags "-X main.Version='+version+'" -o dist/osx-amd64/goload goload/server').exec(),
-        run('env GOOS=darwin GOARCH=386 go build -ldflags "-X main.Version='+version+'" -o dist/osx-386/goload./t goload/server').exec()
+        run('env GOOS=darwin GOARCH=386 go build -ldflags "-X main.Version='+version+'" -o dist/osx-386/goload goload/server').exec()
     );
-
     //env GOOS=darwin GOARCH=arm64 go build -o build/osx-arm64/server goload/server
     //env GOOS=darwin GOARCH=arm go build -o build/osx-arm/server goload/server
-});
+}));
 
-gulp.task('copyPublic', ['cleanDist'], function () {
+gulp.task('copyPublic', function () {
     return merge(
         gulp.src('./public/fonts/**/*').pipe(gulp.dest('./dist/public/fonts')),
         gulp.src('./public/images/**/*').pipe(gulp.dest('./dist/public/images')),
@@ -144,10 +144,10 @@ gulp.task('copyPublic', ['cleanDist'], function () {
     );
 });
 
-gulp.task('build', ['cleanDist', 'buildAllGo', 'buildjs', 'buildcss', 'copyPublic'], function () {
+gulp.task('build', gulp.series('cleanDist',gulp.parallel('buildAllGo', 'buildjs', 'buildcss', 'copyPublic'), function (done) {
     del.sync(['goload*.zip']);
     gulp.src('dist/**/*')
         .pipe(zip('goload-v'+version+'.zip'))
         .pipe(gulp.dest('.'));
-
-});
+    done();
+}));
