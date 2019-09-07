@@ -1,29 +1,29 @@
 package main
 
 import (
-	"net/http"
-	"github.com/julienschmidt/httprouter"
+	"goload/server/controllers"
+	"goload/server/data"
+	"goload/server/models"
+	"goload/server/models/configuration"
 	"html/template"
 	"log"
-	"goload/server/controllers"
-	"goload/server/models"
-	"goload/server/data"
-	"time"
-	"goload/server/models/configuration"
+	"net/http"
 	"os"
 	"os/signal"
-	"github.com/boltdb/bolt"
-)
+	"time"
 
+	"github.com/boltdb/bolt"
+	"github.com/julienschmidt/httprouter"
+)
 
 var Version = "dev"
 
 func main() {
 	config, error := configuration.NewConfigurationFromFileName("config.json")
-	if(error!= nil) {
+	if error != nil {
 		log.Fatal(error)
 	}
-	db,dberr := bolt.Open("goload_database.db",0600,nil)
+	db, dberr := bolt.Open("goload_database.db", 0600, nil)
 	if dberr != nil {
 		log.Fatal(dberr)
 	}
@@ -42,7 +42,9 @@ func main() {
 		tmpl.Execute(w, nil)
 	})
 
-	ul := models.NewUploaded(config)
+	var hoster []models.Hoster
+	hoster = append(hoster, models.NewUploaded(config))
+	dl := models.NewDownloader(hoster, config)
 	database := data.NewDatastore(db)
 	database.LoadData()
 	packageController := controllers.NewPackageController(database)
@@ -57,13 +59,13 @@ func main() {
 	router.GET("/api/version", func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(200)
-		versionJson := []byte(`{"version":"`+Version+`"}`)
+		versionJson := []byte(`{"version":"` + Version + `"}`)
 		w.Write(versionJson)
 	})
-	go LoopPackages(database, ul,config);
+	go LoopPackages(database, dl, config)
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
-	go func(){
+	go func() {
 		for range c {
 			log.Println("Shutting Down")
 			database.SaveData()
@@ -71,7 +73,7 @@ func main() {
 		}
 	}()
 	go func() {
-		for{
+		for {
 			time.Sleep(time.Hour * 1)
 			database.SaveData()
 		}
@@ -80,12 +82,12 @@ func main() {
 
 }
 
-func LoopPackages(database *data.Datastore, ul *models.Uploaded,config *configuration.Configuration) {
+func LoopPackages(database *data.Datastore, dl *models.Downloader, config *configuration.Configuration) {
 	log.Println("Starting Download loop")
 	for {
 		for _, pack := range database.GetPackages() {
-			if (!pack.Finished) {
-				pack.Download(ul)
+			if !pack.Finished {
+				pack.Download(dl)
 				go pack.Unrar(config.Dirs.ExtractDir)
 			}
 		}

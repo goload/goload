@@ -2,46 +2,47 @@ package models
 
 import (
 	"log"
-	"strconv"
 	"regexp"
+	"strconv"
 	"strings"
 
-	"time"
 	"goload/server/unrar"
+	"time"
 )
 
 type Package struct {
-	Id            string `json:"id"`
-	Name          string `json:"name"`
-	Finished      bool `json:"finished"`
-	Files         []*File  `json:"files"`
-	DLC	      string `json:"dlc"`
-	Password      string `json:"password"`
-	Progress      float64 `json:"progress"`
-	UnrarProgress float64 `json:"unrar_progress"`
-	Extracting    bool `json:"extracting"`
+	Id            string    `json:"id"`
+	Name          string    `json:"name"`
+	Finished      bool      `json:"finished"`
+	Files         []*File   `json:"files"`
+	DLC           string    `json:"dlc"`
+	Password      string    `json:"password"`
+	Progress      float64   `json:"progress"`
+	UnrarProgress float64   `json:"unrar_progress"`
+	Extracting    bool      `json:"extracting"`
 	DateAdded     time.Time `json:"date_added"`
-	Size          uint64 `json:"size"`
+	Size          uint64    `json:"size"`
 }
 
 type File struct {
-	Url           string `json:"url"`
-	Finished      bool `json:"finished"`
-	Offline       bool `json:"offline"`
-	Checksum      string `json:"-"`
+	Url           string  `json:"url"`
+	Finished      bool    `json:"finished"`
+	Offline       bool    `json:"offline"`
+	Checksum      string  `json:"-"`
+	ChecksumType  string  `json:"-"`
 	Progress      float64 `json:"progress"`
 	UnrarProgress float64 `json:"unrar_progress"`
-	Extracting    bool `json:"extracting"`
+	Extracting    bool    `json:"extracting"`
 	filePath      string
-	Filename      string `json:"filename"`
-	Size          uint64 `json:"size"`
-	DownloadSpeed string `json:"download_speed"`
-	Failed        bool `json:"failed"`
+	Filename      string        `json:"filename"`
+	Size          uint64        `json:"size"`
+	DownloadSpeed string        `json:"download_speed"`
+	Failed        bool          `json:"failed"`
 	ETE           time.Duration `json:"ete"`
 	Error         error
 }
 
-func (pack *Package) Download(downloader *Uploaded) {
+func (pack *Package) Download(downloader *Downloader) {
 	log.Println("Downloading package " + pack.Name + " with " + strconv.Itoa(len(pack.Files)) + " files")
 	pack.Finished = false
 	downloader.DownloadPackage(pack)
@@ -87,7 +88,7 @@ func (pack *Package) Unrar(path string) {
 	pack.Extracting = true
 	unrarFiles := pack.getExtractableFiles()
 	for _, file := range unrarFiles {
-		c := unrar.Unrar(file.filePath, path + pack.Name + "/", pack.Password)
+		c := unrar.Unrar(file.filePath, path+pack.Name+"/", pack.Password)
 		file.Extracting = true
 		for i := range c {
 			if i.Error != nil {

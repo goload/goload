@@ -1,21 +1,17 @@
 package models
 
 import (
+	"bytes"
+	"errors"
+	"goload/server/models/configuration"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
-	"io/ioutil"
-	"os"
+	"regexp"
 	"strconv"
-	"bytes"
 	"strings"
 	"time"
-	"github.com/pivotal-golang/bytefmt"
-	"errors"
-	"github.com/cavaliercoder/grab"
-	"goload/server/models/configuration"
-	"regexp"
-	"encoding/hex"
 )
 
 const API_KEY string = "lhF2IeeprweDfu9ccWlxXVVypA5nA3EL"
@@ -28,143 +24,17 @@ type Uploaded struct {
 	loginCookie *http.Cookie
 }
 
-type WriteCounter struct {
-	FileSize uint64 // Total # of bytes transferred
-	Total    uint64
-}
-
-func (wc *WriteCounter) Write(p []byte) (int, error) {
-	n := len(p)
-	wc.Total += uint64(n)
-	//log.Println("Progess: "+ strconv.FormatFloat(float64(wc.Total)/float64(wc.FileSize)*100.0,'f', -1, 64))
-	return n, nil
-}
-
 func NewUploaded(config *configuration.Configuration) *Uploaded {
-	ul := &Uploaded{config:config}
+	ul := &Uploaded{config: config}
 	ul.login()
 	return ul
 }
 
-func (ul *Uploaded) DownloadPackage(pack *Package) (error) {
-	savePath := ul.config.Dirs.DownloadDir + pack.Name
-	mkdirErr := os.MkdirAll(savePath, 0755)
-	if mkdirErr != nil {
-		return errors.New("Error creating directory " + savePath)
-	}
-	for _, file := range pack.Files {
-		online, fileName, checksum, size := getApiInfo(file)
-		file.Filename = fileName
-		file.Offline = !online
-		file.Checksum = checksum
-		file.Size = size
-	}
-	pack.UpdateSize()
-	BATCH_SIZE := 1
-	i := 0
-	for i < len(pack.Files) {
-		requests := make([]*grab.Request, 0)
-		requestMap := make(map[*grab.Request]*File)
-		for b := 0; b < BATCH_SIZE && i + b < len(pack.Files); b++ {
-			file := pack.Files[i + b]
-			if (file.Offline) {
-				file.Error = errors.New("Offline")
-				log.Println("Offline: " + file.Url)
-				file.Failed = true
-				file.Progress = 100.0
-				continue
-			}
-			link, error := ul.getDirectLink(file)
-			if (error != nil) {
-				log.Println("Get Direct Link failed "+error.Error())
-				file.Failed = true
-				file.Progress = 100.0
-				file.Error = error
-				continue
-			}
-			req, requestError := grab.NewRequest(link)
-			if (requestError != nil) {
-				file.Failed = true
-				file.Progress = 100.0
-				file.Error = requestError
-				continue
-			}
-			b, _ := hex.DecodeString(file.Checksum)
-			req.SetChecksum("sha1", b)
-			req.RemoveOnError = true
-			req.BufferSize = 4096 * 1024
-			req.Size = file.Size
-			req.Filename = savePath + "/" + file.Filename
-			requestMap[req] = file
-			requests = append(requests, req)
-		}
-		i += BATCH_SIZE
-		ul.downloadBatch(BATCH_SIZE, requests, requestMap, pack);
-
-	}
-	return nil
-}
-
-func (ul *Uploaded) downloadBatch(batchSize int, requests []*grab.Request, requestMap map[*grab.Request]*File, pack *Package) {
-	grabClient := grab.NewClient()
-	t := time.NewTicker(200 * time.Millisecond)
-	respch := grabClient.DoBatch(batchSize, requests...)
-	completed := 0
-	responses := make([]*grab.Response, 0)
-	for completed < len(requests) {
-		select {
-		case resp := <-respch:
-			if resp != nil {
-				responses = append(responses, resp)
-				log.Printf("Started downloading %s %d / %d bytes (%d%%)\n", resp.Filename, resp.BytesTransferred(), resp.Size, int(100 * resp.Progress()))
-
-			}
-		case <-t.C:
-			for i, resp := range responses {
-				if resp != nil && resp.IsComplete() {
-					// print final result
-					if resp.Error != nil {
-						log.Printf("Error downloading %s: %v\n", resp.Filename, resp.Error)
-						requestMap[resp.Request].Failed = true
-						requestMap[resp.Request].Progress = 100.0
-
-
-					} else {
-						log.Printf("Finished %s %d / %d bytes (%d%%)\n", resp.Filename, resp.BytesTransferred(), resp.Size, int(100 * resp.Progress()))
-						requestMap[resp.Request].Finished = true
-						requestMap[resp.Request].Progress = 100 * resp.Progress()
-						requestMap[resp.Request].Failed = false
-						requestMap[resp.Request].filePath = resp.Filename
-						requestMap[resp.Request].ETE = 0
-						log.Println("Average speed: " + bytefmt.ByteSize(uint64(resp.AverageBytesPerSecond())) + "/s")
-
-					}
-
-					// mark completed
-					responses[i] = nil
-					completed++
-					pack.Update()
-				}
-			}
-			for _, resp := range responses {
-				if resp != nil {
-					requestMap[resp.Request].DownloadSpeed = bytefmt.ByteSize(uint64(resp.AverageBytesPerSecond())) + "/s"
-					requestMap[resp.Request].Progress = 100 * resp.Progress()
-					requestMap[resp.Request].ETE = resp.ETA().Sub(time.Now())
-					pack.UpdateProgress()
-				}
-			}
-		}
-	}
-	pack.Finished = true
-	t.Stop()
-}
-
-func (ul *Uploaded)getDirectLink(file *File) (string, error) {
-	if (ul.loginCookie == nil || ul.loginCookie.Expires.Before(time.Now())) {
+func (ul *Uploaded) getDirectLink(file *File) (string, error) {
+	if ul.loginCookie == nil || ul.loginCookie.Expires.Before(time.Now()) {
 		log.Println("Cookie expired, logging in")
 		err := ul.login()
-		if (err != nil) {
+		if err != nil {
 			return "", err
 		}
 	}
@@ -187,22 +57,29 @@ func (ul *Uploaded)getDirectLink(file *File) (string, error) {
 		return "", errors.New("File " + file.Url + " not found")
 	}
 	defer htmlResp.Body.Close()
-	dddata, _ := ioutil.ReadAll(htmlResp.Body);
+	dddata, _ := ioutil.ReadAll(htmlResp.Body)
 	htmlString := string(dddata)
 	link, linkError := extractDirectLink(htmlString)
 	if linkError != nil {
+		log.Println(htmlString)
 		return "", errors.New("Link " + file.Url + " not found")
 	}
 	return link, nil
 
 }
 
-func getApiInfo(file *File) (online bool, filename string, checksum string, size uint64) {
+func (ul *Uploaded) supportsUrl(url string) bool {
+	re := regexp.MustCompile(URL_PATTERN)
+	matches := re.FindAllStringSubmatch(url, -1)
+	return matches != nil
+}
+
+func (ul *Uploaded) getApiInfo(file *File) (online bool, filename string, checksum string, checksumType string, size uint64) {
 	re := regexp.MustCompile(URL_PATTERN)
 	n1 := re.SubexpNames()
 	matches := re.FindAllStringSubmatch(file.Url, -1)
-	if matches == nil{
-		return false, "", "", 0
+	if matches == nil {
+		return false, "", "", "", 0
 	}
 	r2 := matches[0]
 	md := map[string]string{}
@@ -210,28 +87,29 @@ func getApiInfo(file *File) (online bool, filename string, checksum string, size
 		md[n1[i]] = n
 	}
 	resp, err := http.PostForm(API_URL,
-		url.Values{"apikey":{API_KEY}, "id_0":{md["ID"]}})
+		url.Values{"apikey": {API_KEY}, "id_0": {md["ID"]}})
 	defer resp.Body.Close()
 	if err != nil {
-		return false, "", "", 0
+		return false, "", "", "", 0
 	}
 	body, _ := ioutil.ReadAll(resp.Body)
-	stringBody := string(body);
+	stringBody := string(body)
 	results := strings.Split(stringBody, ",")
 	if results[0] != "online" {
-		return false, "", "", 0
+		return
 	}
-	online = true;
+	online = true
 	fileSize, _ := strconv.Atoi(results[2])
 	size = uint64(fileSize)
 	filename = results[4][:len(results[4])-1]
 	checksum = results[3]
+	checksumType = "sha1"
 	return
 }
 
 func extractDirectLink(htmlString string) (string, error) {
 	find := `<form method="post" action="`
-	index := strings.Index(htmlString, `<form method="post" action="`)
+	index := strings.Index(htmlString, find)
 	if index == -1 {
 		return "", errors.New("File link not found")
 	}
@@ -251,7 +129,7 @@ func (ul *Uploaded) login() error {
 	login, _ := client.Do(r)
 	defer login.Body.Close()
 	for _, element := range login.Cookies() {
-		if (element.Name == "login") {
+		if element.Name == "login" {
 			ul.loginCookie = element
 			return nil
 		}
@@ -259,5 +137,3 @@ func (ul *Uploaded) login() error {
 	}
 	return errors.New("Login failed")
 }
-
-
