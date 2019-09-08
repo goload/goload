@@ -44,6 +44,7 @@ func main() {
 
 	var hoster []models.Hoster
 	hoster = append(hoster, models.NewUploaded(config))
+	hoster = append(hoster, models.NewShareOnline(config))
 	dl := models.NewDownloader(hoster, config)
 	database := data.NewDatastore(db)
 	database.LoadData()
