@@ -25,14 +25,15 @@ type Package struct {
 }
 
 type File struct {
-	Url           string  `json:"url"`
-	Finished      bool    `json:"finished"`
-	Offline       bool    `json:"offline"`
-	Checksum      string  `json:"-"`
-	ChecksumType  string  `json:"-"`
-	Progress      float64 `json:"progress"`
-	UnrarProgress float64 `json:"unrar_progress"`
-	Extracting    bool    `json:"extracting"`
+	Url           string            `json:"url"`
+	Finished      bool              `json:"finished"`
+	Offline       bool              `json:"offline"`
+	Checksum      string            `json:"-"`
+	ChecksumType  string            `json:"-"`
+	MetaInfo      map[string]string `json:"-"`
+	Progress      float64           `json:"progress"`
+	UnrarProgress float64           `json:"unrar_progress"`
+	Extracting    bool              `json:"extracting"`
 	filePath      string
 	Filename      string        `json:"filename"`
 	Size          uint64        `json:"size"`

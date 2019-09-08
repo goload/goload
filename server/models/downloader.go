@@ -30,12 +30,13 @@ func (dl *Downloader) DownloadPackage(pack *Package) error {
 	}
 	for _, file := range pack.Files {
 		hoster := dl.getHoster(file.Url)
-		online, fileName, checksum, checksumType, size := hoster.getApiInfo(file)
+		online, fileName, checksum, checksumType, size, metaInfo := hoster.getApiInfo(file)
 		file.Filename = fileName
 		file.Offline = !online
 		file.Checksum = checksum
 		file.ChecksumType = checksumType
 		file.Size = size
+		file.MetaInfo = metaInfo
 	}
 	pack.UpdateSize()
 	BATCH_SIZE := 1
@@ -52,7 +53,8 @@ func (dl *Downloader) DownloadPackage(pack *Package) error {
 				file.Progress = 100.0
 				continue
 			}
-			link, error := dl.getHoster(file.Url).getDirectLink(file)
+			hoster := dl.getHoster(file.Url)
+			link, error := hoster.getDirectLink(file)
 			if error != nil {
 				log.Println("Get Direct Link failed " + error.Error())
 				file.Failed = true
@@ -60,7 +62,11 @@ func (dl *Downloader) DownloadPackage(pack *Package) error {
 				file.Error = error
 				continue
 			}
+			log.Println(link)
 			req, requestError := grab.NewRequest(link)
+			for _, c := range hoster.downloadCookies() {
+				req.HTTPRequest.AddCookie(c)
+			}
 			if requestError != nil {
 				file.Failed = true
 				file.Progress = 100.0

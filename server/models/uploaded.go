@@ -14,18 +14,21 @@ import (
 	"time"
 )
 
-const API_KEY string = "lhF2IeeprweDfu9ccWlxXVVypA5nA3EL"
-const API_URL string = "http://uploaded.net/api/filemultiple"
-const URL_PATTERN = `https?://(?:www\.)?(uploaded\.(to|net)|ul\.to)(/file/|/?\?id=|.*?&id=|/)(?P<ID>\w+)`
-const LOGIN_URL = "http://uploaded.net/io/login"
-
 type Uploaded struct {
 	config      *configuration.Configuration
 	loginCookie *http.Cookie
+	apiUrl      string
+	urlPattern  string
+	apiKey      string
+	loginUrl    string
 }
 
 func NewUploaded(config *configuration.Configuration) *Uploaded {
 	ul := &Uploaded{config: config}
+	ul.apiUrl = "http://uploaded.net/api/filemultiple"
+	ul.apiKey = "lhF2IeeprweDfu9ccWlxXVVypA5nA3EL"
+	ul.urlPattern = `https?://(?:www\.)?(uploaded\.(to|net)|ul\.to)(/file/|/?\?id=|.*?&id=|/)(?P<ID>\w+)`
+	ul.loginUrl = "http://uploaded.net/io/login"
 	ul.login()
 	return ul
 }
@@ -59,7 +62,7 @@ func (ul *Uploaded) getDirectLink(file *File) (string, error) {
 	defer htmlResp.Body.Close()
 	dddata, _ := ioutil.ReadAll(htmlResp.Body)
 	htmlString := string(dddata)
-	link, linkError := extractDirectLink(htmlString)
+	link, linkError := ul.extractDirectLink(htmlString)
 	if linkError != nil {
 		log.Println(htmlString)
 		return "", errors.New("Link " + file.Url + " not found")
@@ -69,28 +72,28 @@ func (ul *Uploaded) getDirectLink(file *File) (string, error) {
 }
 
 func (ul *Uploaded) supportsUrl(url string) bool {
-	re := regexp.MustCompile(URL_PATTERN)
+	re := regexp.MustCompile(ul.urlPattern)
 	matches := re.FindAllStringSubmatch(url, -1)
 	return matches != nil
 }
 
-func (ul *Uploaded) getApiInfo(file *File) (online bool, filename string, checksum string, checksumType string, size uint64) {
-	re := regexp.MustCompile(URL_PATTERN)
+func (ul *Uploaded) getApiInfo(file *File) (online bool, filename string, checksum string, checksumType string, size uint64, metaInfo map[string]string) {
+	re := regexp.MustCompile(ul.urlPattern)
 	n1 := re.SubexpNames()
 	matches := re.FindAllStringSubmatch(file.Url, -1)
 	if matches == nil {
-		return false, "", "", "", 0
+		return false, "", "", "", 0, nil
 	}
 	r2 := matches[0]
 	md := map[string]string{}
 	for i, n := range r2 {
 		md[n1[i]] = n
 	}
-	resp, err := http.PostForm(API_URL,
-		url.Values{"apikey": {API_KEY}, "id_0": {md["ID"]}})
+	resp, err := http.PostForm(ul.apiUrl,
+		url.Values{"apikey": {ul.apiKey}, "id_0": {md["ID"]}})
 	defer resp.Body.Close()
 	if err != nil {
-		return false, "", "", "", 0
+		return false, "", "", "", 0, nil
 	}
 	body, _ := ioutil.ReadAll(resp.Body)
 	stringBody := string(body)
@@ -107,7 +110,7 @@ func (ul *Uploaded) getApiInfo(file *File) (online bool, filename string, checks
 	return
 }
 
-func extractDirectLink(htmlString string) (string, error) {
+func (ul *Uploaded) extractDirectLink(htmlString string) (string, error) {
 	find := `<form method="post" action="`
 	index := strings.Index(htmlString, find)
 	if index == -1 {
@@ -123,7 +126,7 @@ func (ul *Uploaded) login() error {
 	data.Set("id", ul.config.Account.Username)
 	data.Add("pw", ul.config.Account.Password)
 	client := &http.Client{}
-	r, _ := http.NewRequest("POST", LOGIN_URL, bytes.NewBufferString(data.Encode()))
+	r, _ := http.NewRequest("POST", ul.loginUrl, bytes.NewBufferString(data.Encode()))
 	r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	r.Header.Add("Content-Length", strconv.Itoa(len(data.Encode())))
 	login, _ := client.Do(r)
@@ -136,4 +139,8 @@ func (ul *Uploaded) login() error {
 
 	}
 	return errors.New("Login failed")
+}
+
+func (ul *Uploaded) downloadCookies() []*http.Cookie {
+	return make([]*http.Cookie, 0)
 }
